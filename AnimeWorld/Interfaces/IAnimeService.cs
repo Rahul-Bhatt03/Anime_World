@@ -1,13 +1,10 @@
 ﻿using AnimeWorld.Model.Anime;
 
-namespace AnimeWorld.Interfaces
+public interface IAnimeService
 {
-    public interface IAnimeService
-    {
-        Task<IEnumerable<AnimeDto>> GetAllAnimesAsync();
-        Task<DetailedAnimeDto> GetAnimeByIdAsync(int id);
-        Task<AnimeDto> AddAnimeAsync(CreateAnimeDto createAnimeDto);
-        Task<AnimeDto> UpdateAnimeAsync(int id, CreateAnimeDto updateAnimeDto);
-        Task DeleteAnimeAsync(int id);
-    }
+    Task<IEnumerable<AnimeDto>> GetAllAnimesAsync();
+    Task<DetailedAnimeDto> GetAnimeByIdAsync(int id);
+    Task<DetailedAnimeDto> AddAnimeAsync(CreateAnimeDto createAnimeDto); // Changed
+    Task<DetailedAnimeDto> UpdateAnimeAsync(int id, CreateAnimeDto updateAnimeDto); // Changed
+    Task<bool> DeleteAnimeAsync(int id); // Changed
 }

@@ -10,7 +10,7 @@ namespace AnimeWorld.Model.User
 
         public string Role { get; set; } = "User";
         public string Email { get; set; }
-        public string ProfileImageUrl { get; set; }
+        public string? ProfileImageUrl { get; set; }
 
     }
 }

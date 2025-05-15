@@ -13,5 +13,7 @@ namespace AnimeWorld.Data
 
         public DbSet<Episode>Episodes { get; set; }
 
+        public DbSet<Users>Users { get; set; }
+
     }
 }

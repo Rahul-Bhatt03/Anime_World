@@ -9,6 +9,7 @@ namespace AnimeWorld.Model.Anime
         //public string Name { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        public string? Genre { get; set; }
         public string ThumbnailUrl { get; set; }
         public List<SeasonDto> Seasons{ get; set; }
     }

@@ -1,10 +1,12 @@
 using AnimeWorld.Data;
 using AnimeWorld.Repositories;
 using AnimeWorld.Interfaces;
-using AnimeWorld.Repositories;
+//using AnimeWorld.Repositories;
 using AnimeWorld.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using AnimeWorld.Entities;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,16 +33,41 @@ builder.Services.AddSwaggerGen(c =>
     // c.CustomSchemaIds(type => type.ToString().Replace("+", "."));
 });
 
+// Add this configuration before builder.Build()
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenLocalhost(7246, listenOptions =>
+    {
+        listenOptions.UseHttps();
+    });
+});
+
+
 
 // Register Repositories
 builder.Services.AddScoped<IAnimeRepository, AnimeRepository>();
 builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
 builder.Services.AddScoped<IEpisodeRepository, EpisodeRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAnimeService, AnimeService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IEpisodeService, EpisodeService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddSingleton<IPasswordHasher<Users>, PasswordHasher<Users>>();
+
+//once builder.build is used then after , the builder.service becomes read only and we cant use it further more so use it before builder.build
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactFrontend", policy => policy
+        .WithOrigins("http://localhost:5173", "https://localhost:7246")  //here react frontend url is used 
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials());  //only if we are using cookies or auth 
+});
 
 var app = builder.Build();
 
@@ -52,6 +79,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Add this before app.UseAuthorization()
+app.UseCors("AllowReactFrontend");
 app.UseAuthorization();
 app.MapControllers();
 
