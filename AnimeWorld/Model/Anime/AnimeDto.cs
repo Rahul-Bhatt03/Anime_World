@@ -8,5 +8,6 @@
         public string Description { get; set; }
         public string? Genre { get; set; }
         public string ThumbnailUrl { get; set; }
+        public DateOnly CreatedAt { get; set; }
     }
 }

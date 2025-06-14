@@ -15,5 +15,7 @@ namespace AnimeWorld.Data
 
         public DbSet<Users>Users { get; set; }
 
+        public DbSet<FavoriteAnime> FavoriteAnimes { get; set; }
+
     }
 }

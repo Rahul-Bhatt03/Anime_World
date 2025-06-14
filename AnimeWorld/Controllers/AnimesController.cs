@@ -1,5 +1,6 @@
 ﻿using AnimeWorld.Interfaces;
 using AnimeWorld.Model.Anime;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,7 @@ namespace AnimeWorld.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [EnableCors("AllowReactFrontend")]
+    [Authorize]
     public class AnimesController : ControllerBase
     {
         private readonly IAnimeService _animeService;
@@ -22,6 +24,7 @@ namespace AnimeWorld.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<AnimeDto>>> GetAllAnimes()
         {
             try
@@ -37,6 +40,7 @@ namespace AnimeWorld.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<DetailedAnimeDto>> GetAnimeById(int id)
         {
             try

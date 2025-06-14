@@ -1,12 +1,16 @@
 using AnimeWorld.Data;
-using AnimeWorld.Repositories;
+using AnimeWorld.Entities;
 using AnimeWorld.Interfaces;
-//using AnimeWorld.Repositories;
+using AnimeWorld.Repositories;
 using AnimeWorld.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using AnimeWorld.Entities;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,17 +24,79 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Add Swagger
+// Add Authentication (JWT Bearer example)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.Headers.Add("Token-Expired", "true");
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// Add authorization
+builder.Services.AddAuthorization();
+
+// Configure global authorization filter
+builder.Services.AddControllers(options =>
+{
+    // This makes all controllers require authorization by default
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+});
+
+// Add Swagger with JWT support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "AnimeWorld API", Version = "v1" });
-
-    // Add this to handle duplicate class names
     c.CustomSchemaIds(x => x.FullName);
 
-    // OR use this alternative for cleaner schema IDs
-    // c.CustomSchemaIds(type => type.ToString().Replace("+", "."));
+    // Add JWT support in Swagger
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "JWT Authentication",
+        Description = "Enter JWT Bearer token **_only_**",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Reference = new OpenApiReference
+        {
+            Id = JwtBearerDefaults.AuthenticationScheme,
+            Type = ReferenceType.SecurityScheme
+        }
+    };
+    c.AddSecurityDefinition(securityScheme.Reference.Id, securityScheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {securityScheme, Array.Empty<string>()}
+    });
 });
 
 // Add this configuration before builder.Build()
@@ -42,31 +108,30 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     });
 });
 
-
-
-// Register Repositories
+// Register Repositories and Services
 builder.Services.AddScoped<IAnimeRepository, AnimeRepository>();
 builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
 builder.Services.AddScoped<IEpisodeRepository, EpisodeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-// Register Services
 builder.Services.AddScoped<IAnimeService, AnimeService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IEpisodeService, EpisodeService>();
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<IFavouriteAnimeService, FavoriteAnimeService>();
+builder.Services.AddScoped<IFavouriteAnime, FavoriteAnimeRepository>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddSingleton<IPasswordHasher<Users>, PasswordHasher<Users>>();
 
-//once builder.build is used then after , the builder.service becomes read only and we cant use it further more so use it before builder.build
+// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactFrontend", policy => policy
-        .WithOrigins("http://localhost:5173", "https://localhost:7246")  //here react frontend url is used 
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .AllowCredentials());  //only if we are using cookies or auth 
+        .WithOrigins("http://localhost:5173", "https://localhost:7246")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -79,8 +144,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-// Add this before app.UseAuthorization()
+
+// The order of these middleware calls is important!
+app.UseRouting();
 app.UseCors("AllowReactFrontend");
+app.UseAuthentication(); // This must come before UseAuthorization
 app.UseAuthorization();
 app.MapControllers();
 

@@ -54,7 +54,7 @@ namespace AnimeWorld.Repositories
                 return null;
 
             // Map onto the existing entity (avoids changing the Id)
-            //_context.Entry(existingUser).CurrentValues.SetValues(updatedUser);
+            //_context.Entrydev(existingUser).CurrentValues.SetValues(updatedUser);
             existingUser.Name = updatedUser.Username;  
             existingUser.Email = updatedUser.Email;
             existingUser.Role = updatedUser.Role;

@@ -13,7 +13,6 @@ namespace AnimeWorld.Repositories
         {
             _context = context;
         }
-
         public async Task<IEnumerable<Anime>> GetAllAnimesAsync()
         {
             return await _context.Animes
@@ -21,7 +20,6 @@ namespace AnimeWorld.Repositories
                 .ThenInclude(s => s.Episodes)
                 .ToListAsync();
         }
-
         public async Task<Anime> GetAnimeByIdAsync(int id)
         {
             return await _context.Animes

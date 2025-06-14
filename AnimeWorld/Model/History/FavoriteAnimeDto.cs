@@ -4,5 +4,6 @@
     {
         public int Id { get; set; }
         public int AnimeId { get; set; }
+        public string AnimeTitle { get; set; }
     }
 }

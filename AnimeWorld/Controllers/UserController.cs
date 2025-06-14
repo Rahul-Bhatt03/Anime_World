@@ -1,5 +1,6 @@
 ﻿using AnimeWorld.Interfaces;
 using AnimeWorld.Model.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,6 +11,7 @@ namespace AnimeWorld.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -21,6 +23,7 @@ namespace AnimeWorld.Controllers
             _configuration = configuration;
         }
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<ActionResult<UserDto>> Register(RegisterUserDto registerUserDto)
         {
             var user = await _userService.RegisterAsync(registerUserDto);
@@ -31,6 +34,7 @@ namespace AnimeWorld.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<ActionResult<UserDto>> Login(LoginDto loginDto) {
             var user = await _userService.LoginAsync(loginDto);
             if (user == null)
